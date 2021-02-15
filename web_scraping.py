@@ -27,6 +27,9 @@ def GetLinksForAuthority(base_url, start_index):
         matches = re.findall(r'(http.*rev.*jpg)',str(result))
         if (matches != []):
             rev_urls.append(matches[0])
+        matches = re.findall(r'(http.*obv.*jpg)',str(result))
+        if (matches != []):
+            obv_urls.append(matches[0])
     
     return (rev_urls, obv_urls)
 
@@ -35,7 +38,7 @@ def GetAllLinksForAuthority(authority_name, count):
     all_obv_urls = []
     for index in range(0, count, 20):
         print('please wait')
-        time.sleep(.1)
+        time.sleep(.02)
         urls = GetLinksForAuthority(base_urls[authority_name], index)
         if len(urls[0]) == 0:
             break
@@ -44,26 +47,29 @@ def GetAllLinksForAuthority(authority_name, count):
     # TODO get obverse links when we need them
     return (all_rev_urls, all_obv_urls)
 
+def DownloadImage(url, authority_name):
+    file_name = re.findall(r'.*/(.*)', url)[0]
+    print('downloading picture {0} please wait'.format(file_name))
+    urllib.request.urlretrieve(
+            url, 'images/{0}/{1}'.format(authority_name, file_name))
+
 def DownloadImages(authority_name, count):
     print('Downloading Images for ' + authority_name)
     
     if not os.path.exists('images/' + authority_name):
         os.makedirs('images/' + authority_name)
     
-    all_rev_urls = GetAllLinksForAuthority(authority_name, 4000)[0]
+    (all_rev_urls, all_obv_urls) = GetAllLinksForAuthority(authority_name, 4000)
     incr = len(all_rev_urls)/count
     if (incr < 1):
         incr = 1
     counter = 0
     while counter < len(all_rev_urls) and count > 0:
-        url = all_rev_urls[int(counter)]
-        file_name = re.findall(r'.*/(.*)', url)[0]
-        print('downloading picture {0} please wait'.format(file_name))
-        time.sleep(.1)
-        urllib.request.urlretrieve(
-                url, 'images/{0}/{1}'.format(authority_name, file_name))
+        DownloadImage(all_rev_urls[int(counter)], authority_name)
+        DownloadImage(all_obv_urls[int(counter)], authority_name)
         counter += incr
         count -= 1
+        time.sleep(.02)
 
 if not os.path.exists('images'):
     os.makedirs('images')
